@@ -76,7 +76,6 @@
 
     <hr class="my-4" />
 
-    <!-- Issues Table Header with Search and Download -->
     <div class="d-flex align-items-center justify-content-between mb-2">
       <h3 class="mb-0">Issues</h3>
       <div class="d-flex gap-2">
@@ -209,6 +208,7 @@
         <p><b>Created:</b> ${fmtDate(issue.created_at)}</p>
         <div class="mt-2">
           <button id="modalSaveBtn" class="btn btn-primary me-2">Save Changes</button>
+          <button id="modalDeleteBtn" class="btn btn-danger me-2">Delete Issue</button>
           <button id="modalCloseBtn" class="btn btn-secondary">Close</button>
           <span id="modalMsg" class="ms-2 text-success"></span>
           <span id="modalErr" class="ms-2 text-danger"></span>
@@ -257,6 +257,25 @@
           setTimeout(()=>document.getElementById("modalMsg").textContent="",2000);
         } catch(err) {
           document.getElementById("modalErr").textContent=err.message||"Failed to update.";
+        }
+      };
+
+      document.getElementById("modalDeleteBtn").onclick = async () => {
+        if (!confirm("Are you sure you want to delete this issue?")) return;
+
+        try {
+          const res = await fetch(`/issues/${issue.id}`, { method: "DELETE" });
+          if (!res.ok) throw new Error("Failed to delete issue");
+          cache = cache.filter(i => i.id !== issue.id);
+          render(cache);
+
+          const modalInstance = bootstrap.Modal.getInstance(modalEl);
+          if(modalInstance) modalInstance.hide();
+          const backdrops = document.getElementsByClassName('modal-backdrop');
+          while(backdrops.length > 0) backdrops[0].parentNode.removeChild(backdrops[0]);
+
+        } catch(err) {
+          document.getElementById("modalErr").textContent = err.message || "Failed to delete issue.";
         }
       };
     }

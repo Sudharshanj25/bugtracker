@@ -127,19 +127,47 @@ def add_issue():
 def update_issue(issue_id):
     issue = Issue.query.get_or_404(issue_id)
     data = request.form or request.json
+
+    # Update fields if present
     if "status" in data:
         new_status = data["status"]
         if new_status not in ALLOWED_STATUS:
             return jsonify({"error": "Invalid status"}), 400
         issue.status = new_status
+
     if "assignee" in data:
         issue.assignee = (data["assignee"] or "").strip()
+
+    if "scenario_id" in data:
+        issue.scenario_id = (data["scenario_id"] or "").strip()
+
+    if "step_no" in data:
+        issue.step_no = (data["step_no"] or "").strip()
+
+    # New attachments
     new_files = request.files.getlist("attachments")
     if new_files:
         existing = json.loads(issue.attachments) if issue.attachments else []
         issue.attachments = json.dumps(existing + save_attachments(new_files))
+
     db.session.commit()
     return jsonify(issue.to_dict())
+
+@app.route("/issues/<int:issue_id>", methods=["DELETE"])
+def delete_issue(issue_id):
+    issue = Issue.query.get_or_404(issue_id)
+
+    # Delete attached files
+    files = json.loads(issue.attachments) if issue.attachments else []
+    for f in files:
+        try:
+            os.remove(os.path.join(app.config['UPLOAD_FOLDER'], f))
+        except FileNotFoundError:
+            pass
+
+    db.session.delete(issue)
+    db.session.commit()
+    return jsonify({"message": "Issue deleted"})
 
 @app.route("/issues/<int:issue_id>/attachments/<filename>", methods=["DELETE"])
 def delete_attachment(issue_id, filename):
@@ -162,7 +190,6 @@ def uploaded_file(filename):
         abort(404)
     return send_from_directory(app.config['UPLOAD_FOLDER'], filename)
 
-# ----- Download Excel -----
 @app.route("/issues/download")
 def download_issues():
     issues = Issue.query.order_by(Issue.id.desc()).all()
