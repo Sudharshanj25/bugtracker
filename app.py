@@ -33,8 +33,8 @@ class Issue(db.Model):
     raised_by = db.Column(db.String(100))
     assignee = db.Column(db.String(100))
     status = db.Column(db.String(20), default="Open", nullable=False)
-    scenario_id = db.Column(db.String(50))  # new field
-    step_no = db.Column(db.String(20))      # new field
+    scenario_id = db.Column(db.String(50))
+    step_no = db.Column(db.String(20))
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
     def to_dict(self):
@@ -65,9 +65,7 @@ def allowed_file(filename: str) -> bool:
 def save_attachments(files):
     saved = []
     for f in files[:MAX_ATTACHMENTS]:
-        if f and f.filename:
-            if not allowed_file(f.filename):
-                continue
+        if f and f.filename and allowed_file(f.filename):
             unique = f"{uuid.uuid4().hex}_{secure_filename(f.filename)}"
             f.save(os.path.join(app.config['UPLOAD_FOLDER'], unique))
             saved.append(unique)
@@ -128,23 +126,12 @@ def update_issue(issue_id):
     issue = Issue.query.get_or_404(issue_id)
     data = request.form or request.json
 
-    # Update fields if present
-    if "status" in data:
-        new_status = data["status"]
-        if new_status not in ALLOWED_STATUS:
-            return jsonify({"error": "Invalid status"}), 400
-        issue.status = new_status
+    for field in ["track", "summary", "description", "raised_by", "assignee", "status", "scenario_id", "step_no"]:
+        if field in data:
+            if field=="status" and data[field] not in ALLOWED_STATUS:
+                return jsonify({"error": "Invalid status"}), 400
+            setattr(issue, field, (data[field] or "").strip())
 
-    if "assignee" in data:
-        issue.assignee = (data["assignee"] or "").strip()
-
-    if "scenario_id" in data:
-        issue.scenario_id = (data["scenario_id"] or "").strip()
-
-    if "step_no" in data:
-        issue.step_no = (data["step_no"] or "").strip()
-
-    # New attachments
     new_files = request.files.getlist("attachments")
     if new_files:
         existing = json.loads(issue.attachments) if issue.attachments else []
@@ -156,15 +143,12 @@ def update_issue(issue_id):
 @app.route("/issues/<int:issue_id>", methods=["DELETE"])
 def delete_issue(issue_id):
     issue = Issue.query.get_or_404(issue_id)
-
-    # Delete attached files
     files = json.loads(issue.attachments) if issue.attachments else []
     for f in files:
         try:
             os.remove(os.path.join(app.config['UPLOAD_FOLDER'], f))
         except FileNotFoundError:
             pass
-
     db.session.delete(issue)
     db.session.commit()
     return jsonify({"message": "Issue deleted"})
