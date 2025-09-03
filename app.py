@@ -11,7 +11,10 @@ import pandas as pd
 # ----- Config -----
 ALLOWED_TRACKS = {'AP', 'RP', 'Common', 'LI', 'ES'}
 ALLOWED_STATUS = {'Open', 'Fixed', 'Deployed', 'Closed'}
-ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif', 'webp', 'bmp', 'pdf'}
+ALLOWED_EXTENSIONS = {
+    'png', 'jpg', 'jpeg', 'gif', 'webp', 'bmp', 
+    'pdf', 'xls', 'xlsx', 'doc', 'docx', 'txt'
+}
 MAX_ATTACHMENTS = 5
 
 app = Flask(__name__)
