@@ -76,9 +76,13 @@
 
     <hr class="my-4" />
 
+    <!-- Issues Table Header with Search and Download -->
     <div class="d-flex align-items-center justify-content-between mb-2">
       <h3 class="mb-0">Issues</h3>
-      <input id="searchBox" class="form-control w-25" placeholder="Search summary/assignee..." />
+      <div class="d-flex gap-2">
+        <input id="searchBox" class="form-control" placeholder="Search summary/assignee..." />
+        <a href="/issues/download" class="btn btn-success">Download Excel</a>
+      </div>
     </div>
 
     <div class="table-responsive">
